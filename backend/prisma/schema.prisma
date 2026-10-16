@@ -1,0 +1,123 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id                String             @id @default(uuid())
+  name              String
+  email             String             @unique
+  password          String
+  role              Role               @default(USER)
+  avatar            String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  trips             Trip[]
+  savedDestinations SavedDestination[]
+  reviews           Review[]
+
+  @@index([email])
+}
+
+model Destination {
+  id              String             @id @default(uuid())
+  name            String
+  city            String
+  country         String
+  category        String             // Beach, Mountain, Heritage, Adventure, Urban, Nature
+  description     String             @db.Text
+  imageUrl        String
+  rating          Float              @default(4.5)
+  estimatedBudget Float              // in INR
+  bestTimeToVisit String
+  attractions     String[]
+  featured        Boolean            @default(false)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  hotels          Hotel[]
+  savedBy         SavedDestination[]
+  reviews         Review[]
+
+  @@index([category])
+  @@index([featured])
+}
+
+model Hotel {
+  id            String    @id @default(uuid())
+  name          String
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  pricePerNight Float     // in INR
+  rating        Float     @default(4.0)
+  address       String
+  imageUrl      String
+  amenities     String[]  // WiFi, Pool, Spa, Free Breakfast, AC, Ocean View
+  featured      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  reviews       Review[]
+
+  @@index([destinationId])
+  @@index([featured])
+}
+
+model Trip {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  destination String
+  startDate   DateTime
+  endDate     DateTime
+  travelers   Int      @default(1)
+  budget      Float    // in INR
+  tripStyle   String   // adventure, relaxation, culture, family, food
+  preferences String?
+  itinerary   Json     // Day-by-day JSON schedule with morning/afternoon/evening & cost breakdown
+  status      String   @default("PLANNED") // PLANNED, COMPLETED, CANCELLED
+  isAiGenerated Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model SavedDestination {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([userId, destinationId])
+  @@index([userId])
+}
+
+model Review {
+  id            String       @id @default(uuid())
+  rating        Int
+  comment       String       @db.Text
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  destinationId String?
+  destination   Destination? @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  hotelId       String?
+  hotel         Hotel?       @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now())
+
+  @@index([destinationId])
+  @@index([hotelId])
+}
