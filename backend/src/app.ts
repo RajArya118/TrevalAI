@@ -7,17 +7,52 @@ import { NotFoundError } from './utils/errors.js';
 
 const app = express();
 
-// Middleware
+// Security: Disable express fingerprinting
+app.disable('x-powered-by');
+
+// Security Headers Middleware
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
+// Production & Development CORS Configuration
+const allowedStaticOrigins = [
+  config.frontendUrl,
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'http://127.0.0.1:5175',
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: [config.frontendUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: (origin, callback) => {
+      // Allow server-to-server or curl/mobile requests without origin header
+      if (!origin) return callback(null, true);
+
+      const isAllowed =
+        allowedStaticOrigins.includes(origin) ||
+        (config.nodeEnv === 'development' && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin));
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS error: Origin '${origin}' is not authorized.`));
+      }
+    },
     credentials: true,
   })
 );
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Request Logger (Development)
+// Development Request Logger
 if (config.nodeEnv === 'development') {
   app.use((req, res, next) => {
     const start = Date.now();

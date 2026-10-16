@@ -4,6 +4,11 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('⛔ Refusing to run development seed script in a PRODUCTION environment!');
+    process.exit(1);
+  }
+
   console.log('🌱 Starting TravelAI database seed...');
 
   // 1. Clean existing seed data safely if needed

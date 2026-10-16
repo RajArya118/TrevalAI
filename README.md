@@ -129,15 +129,21 @@ cd ..
 ```
 
 ### Step 3: Configure Environment Variables
-Copy and verify environment files:
+Copy the example environment files to `.env` in both backend and frontend:
 ```powershell
-# In backend/.env:
+# Copy template files in Windows PowerShell:
+Copy-Item backend\.env.example backend\.env
+Copy-Item frontend\.env.example frontend\.env
+```
+
+Open `backend\.env` and configure your local PostgreSQL credentials:
+```env
 PORT=5000
 NODE_ENV=development
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/travelai_app?schema=public"
-JWT_SECRET=super_secret_travelai_jwt_key_development_2026
+DATABASE_URL="postgresql://postgres:YOUR_POSTGRES_PASSWORD@localhost:5432/travelai_app?schema=public"
+JWT_SECRET=your_custom_jwt_secret_key_here_min_32_chars
 FRONTEND_URL=http://localhost:5173
-# Optional: GEMINI_API_KEY (Leave blank to use built-in high-fidelity Demo Mode)
+# Optional: GEMINI_API_KEY (Leave empty to use built-in high-fidelity Demo Mode)
 GEMINI_API_KEY=
 ```
 
